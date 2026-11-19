@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerar Documentos - Auxílio Funeral e Pensão</title>
+  <style>
+    :root {
+      --primary-color: #0056b3;
+      --bg-color: #f4f7f6;
+      --text-color: #333;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: var(--primary-color);
+      margin-bottom: 5px;
+      font-size: 26px;
+    }
+    h2 {
+      text-align: center;
+      color: #666;
+      margin-top: 0;
+      margin-bottom: 30px;
+      font-size: 18px;
+      font-weight: 400;
+    }
+    fieldset {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 25px;
+      background-color: #fafafa;
+    }
+    legend {
+      background: var(--primary-color);
+      color: #fff;
+      padding: 6px 15px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .full-width { grid-column: 1 / -1; }
+    .form-group { margin-bottom: 0; }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #444;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    input[type="text"], input[type="email"], input[type="tel"] {
+      text-transform: uppercase;
+    }
+    input:focus, select:focus {
+      border-color: var(--primary-color);
+      outline: none;
+      box-shadow: 0 0 5px rgba(0, 86, 179, 0.3);
+    }
+    input:invalid:not(:placeholder-shown):not(:focus) {
+      border-color: #d9534f;
+      background: #fff5f5;
+    }
+    .dica { font-size: 12px; color: #666; margin-top: 5px; }
+    #cepStatus { font-size: 12px; margin-top: 5px; min-height: 16px; color: #666; }
+    #cepStatus.erro { color: #c0392b; }
+    #cepStatus.ok { color: #1e8e3e; }
+
+    /* Seleção de documentos */
+    .escolha-doc { border-color: #28a745; background: #f3fbf5; }
+    .escolha-doc legend { background: #28a745; }
+    .doc-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 20px;
+      margin-top: 12px;
+    }
+    .check {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-weight: 400;
+      font-size: 14px;
+      margin: 0;
+      cursor: pointer;
+    }
+    .check input { margin-top: 3px; }
+    .check.todos { font-weight: 700; padding-bottom: 8px; border-bottom: 1px dashed #9ccaa8; }
+
+    button[type="submit"] {
+      background-color: #28a745;
+      color: white;
+      padding: 15px;
+      border: none;
+      border-radius: 5px;
+      width: 100%;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-top: 20px;
+    }
+    button[type="submit"]:hover { background-color: #218838; }
+
+    @media (max-width: 650px) {
+      .form-grid, .grid-3, .doc-list { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>GERAR DOCUMENTOS</h1>
+  <h2>Auxílio Funeral e Pensão</h2>
+
+  <form id="meuForm" novalidate>
+
+    <fieldset class="escolha-doc">
+      <legend>Documentos a gerar em PDF</legend>
+      <label class="check todos">
+        <input type="checkbox" id="selTodos" checked>
+        <span>Selecionar todos os documentos</span>
+      </label>
+      <div class="doc-list" id="docList">
+        <label class="check"><input type="checkbox" class="doc-check" value="0" checked><span>1 - Requerimento de Auxílio Funeral</span></label>
+        <label class="check"><input type="checkbox" class="doc-check" value="1" checked><span>2 - Requerimento de Pensão Civil</span></label>
+        <label class="check"><input type="checkbox" class="doc-check" value="2" checked><span>3 - Declaração de Relacionamento e Filhos</span></label>
+        <label class="check"><input type="checkbox" class="doc-check" value="3" checked><span>4 - Acumulação de Benefícios</span></label>
+        <label class="check"><input type="checkbox" class="doc-check" value="4" checked><span>5 - Dados do Beneficiário, Endereço e Banco</span></label>
+        <label class="check"><input type="checkbox" class="doc-check" value="5" checked><span>6 - Declaração de Pensão/Aposentadoria em Outro Regime</span></label>
+        <label class="check"><input type="checkbox" class="doc-check" value="6" checked><span>7 - Dependente Inválida / Isenção de IR</span></label>
+        <label class="check"><input type="checkbox" class="doc-check" value="7" checked><span>8 - Declaração de Habilitação à Pensão (PGP)</span></label>
+      </div>
+      <div class="dica">Marque um ou mais documentos. Cada documento sai em uma página A4, na ordem acima, em um único PDF.</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Dados do(a) Servidor(a)</legend>
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label for="servidor">Nome Servidor(a):</label>
+          <input type="text" id="servidor" name="servidor" required>
+        </div>
+
+        <div class="form-group">
+          <label for="matufv">Matrícula UFV:</label>
+          <input type="text" id="matufv" name="matufv" required>
+        </div>
+
+        <div class="form-group">
+          <label for="siape">Matrícula Siape:</label>
+          <input type="text" id="siape" name="siape" required>
+        </div>
+
+        <div class="form-group">
+          <label for="situacao">Situação:</label>
+          <select name="situacao" id="situacao" required>
+            <option value="">->Selecione aqui</option>
+            <option value="do servidor ativo">servidor ativo</option>
+            <option value="da servidora ativa">servidora ativa</option>
+            <option value="do servidor aposentado">servidor aposentado</option>
+            <option value="da servidora aposentada">servidora aposentada</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="falecimento">Data do Falecimento:</label>
+          <input type="text" id="falecimento" name="falecimento" class="mask-data" placeholder="dd/mm/aaaa" maxlength="10" inputmode="numeric" required>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Dados do(a) Pensionista</legend>
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label for="categoria">Servidor(a) é do(a) pensionista:</label>
+          <select name="categoria" id="categoria" required>
+            <option value="">->Selecione aqui</option>
+            <option value="do meu marido">marido</option>
+            <option value="da minha esposa">esposa</option>
+            <option value="do meu ex-marido">ex-marido</option>
+            <option value="da minha ex-esposa">ex-esposa</option>
+            <option value="do meu companheiro">companheiro</option>
+            <option value="da minha companheira">companheira</option>
+            <option value="do meu ex-companheiro">ex-companheiro</option>
+            <option value="da minha ex-companheira">ex-companheira</option>
+            <option value="do meu pai">filho/filha - falecimento do PAI</option>
+            <option value="da minha mãe">filho/filha - falecimento da MAE</option>
+          </select>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="nome">Nome Pensionista:</label>
+          <input type="text" id="nome" name="nome" required>
+        </div>
+
+        <div class="form-group">
+          <label for="etnia">Etnia:</label>
+          <select name="etnia" id="etnia" required>
+            <option value="">->Selecione aqui</option>
+            <option value="Amarelo">Amarelo</option>
+            <option value="Branca">Branca</option>
+            <option value="Parda">Parda</option>
+            <option value="Preta">Preta</option>
+            <option value="Indígena">Indígena</option>
+            <option value="Prefiro Não Declarar">Não Declara</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="relacao">Relacionamento:</label>
+          <select name="relacao" id="relacao" required>
+            <option value="">->Selecione aqui</option>
+            <option value="do meu casamento">Casamento</option>
+            <option value="da minha união">União Estável</option>
+            <option value="do casamento com meu ex-marido">ex-marido</option>
+            <option value="do casamento com minha ex-esposa">ex-esposa</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="cpf">CPF:</label>
+          <input type="text" id="cpf" name="cpf" class="mask-cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" required>
+        </div>
+
+        <div class="form-group">
+          <label for="rg">RG:</label>
+          <input type="text" id="rg" name="rg" required>
+        </div>
+
+        <div class="form-group">
+          <label for="telefone">Telefone:</label>
+          <input type="tel" id="telefone" name="telefone" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">E-mail:</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="filhos">Nº de Filhos/as com o(a) Servidor(a):</label>
+          <select name="filhos" id="filhos" required>
+            <option value="">->Selecione aqui</option>
+            <option value="nenhum filho.">00</option>
+            <option value="01 filho(a), em perfeita saúde física e mental">01</option>
+            <option value="02 filhos(as), todos em perfeita saúde física e mental">02</option>
+            <option value="03 filhos(as), todos em perfeita saúde física e mental">03</option>
+            <option value="04 filhos(as), todos em perfeita saúde física e mental">04</option>
+            <option value="05 filhos(as), todos em perfeita saúde física e mental">05</option>
+            <option value="06 filhos(as), todos em perfeita saúde física e mental">06</option>
+            <option value="07 filhos(as), todos em perfeita saúde física e mental">07</option>
+            <option value="08 filhos(as), todos em perfeita saúde física e mental">08</option>
+            <option value="09 filhos(as), todos em perfeita saúde física e mental">09</option>
+            <option value="10 filhos(as), todos em perfeita saúde física e mental">10</option>
+            <option value="11 filhos(as), todos em perfeita saúde física e mental">11</option>
+            <option value="12 filhos(as), todos em perfeita saúde física e mental">12</option>
+            <option value="13 filhos(as), todos em perfeita saúde física e mental">13</option>
+            <option value="14 filhos(as), todos em perfeita saúde física e mental">14</option>
+            <option value="15 filhos(as), todos em perfeita saúde física e mental">15</option>
+          </select>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="beneficio">Opção de Benefício:</label>
+          <select name="beneficio" id="beneficio" required>
+            <option value="">->Selecione aqui</option>
+            <option value="<strong>NÃO ACUMULO</strong> outro benefício previdenciário além do que está sendo pleiteado perante a UFV.<br>Tenho ciência que em caso de acumulação, tenho o compromisso de comunicar o recebimento do benefício às outras fontes pagadoras, pois faço a opção em receber o integralmente o benefício de pensão civil  aqui pleiteado, e submeter o(s) outro(s) benefício(s), nos termos dos artigos 23 e 24 da EC 103/2019.">NÃO ACUMULA</option>
+            <option value="<strong>ACUMULO</strong> outro benefício previdenciário além do que está sendo pleiteado perante a UFV.<br>Tenho ciência que em caso de acumulação, tenho o compromisso de comunicar o recebimento do benefício às outras fontes pagadoras, pois faço a opção em receber o integralmente o benefício de pensão civil aqui pleiteado, e submeter o(s) outro(s) benefício(s), pago pelo Instituto Nacional do Seguro Social (INSS) nos termos dos artigos 23 e 24 da EC 103/2019.">ACUMULA  - RECEBER DA UFV - INSS</option>
+            <option value="<strong>ACUMULO</strong> outro benefício previdenciário além do que está sendo pleiteado perante a UFV.<br>Tenho ciência que em caso de acumulação, tenho o compromisso de comunicar o recebimento do benefício às outras fontes pagadoras, pois faço a opção em receber o integralmente o benefício de pensão civil aqui pleiteado, e submeter o(s) outro(s) benefício(s), pago pelo ___________________________________________________ nos termos dos artigos 23 e 24 da EC 103/2019.">ACUMULA  - RECEBER DA UFV - Outro</option>
+            <option value="<strong>ACUMULO</strong> outro benefício previdenciário além do que está sendo pleiteado perante a UFV.<br>Tenho ciência que em caso de acumulação, tenho o compromisso de comunicar o recebimento do benefício às outras fontes pagadoras, pois faço a opção em receber o integralmente o benefício de Aposentadoria pago pelo Instituto Nacional do Seguro Social (INSS), e submeter a pensão aqui pleiteada nos termos dos artigos 23 e 24 da EC 103/2019.">ACUMULA - RECEBER DE OUTRA INSTITUIÇÃO - Aposentadoria-INSS</option>
+            <option value="<strong>ACUMULO</strong> outro benefício previdenciário além do que está sendo pleiteado perante a UFV.<br>Tenho ciência que em caso de acumulação, tenho o compromisso de comunicar o recebimento do benefício às outras fontes pagadoras, pois faço a opção em receber o integralmente o benefício de Pensão pago pelo Instituto Nacional do Seguro Social (INSS), e submeter a pensão aqui pleiteada nos termos dos artigos 23 e 24 da EC 103/2019.">ACUMULA - RECEBER DE OUTRA INSTITUIÇÃO - Pensão-INSS</option>
+            <option value="<strong>ACUMULO</strong> outro benefício previdenciário além do que está sendo pleiteado perante a UFV.<br>Tenho ciência que em caso de acumulação, tenho o compromisso de comunicar o recebimento do benefício às outras fontes pagadoras, pois faço a opção em receber o integralmente o benefício de Aposentadoria pago pelo ___________________________________________________, e submeter a pensão aqui pleiteada nos termos dos artigos 23 e 24 da EC 103/2019.">ACUMULA - RECEBER DE OUTRA INSTITUIÇÃO - Aposentadoria -Outro</option>
+            <option value="<strong>ACUMULO</strong> outro benefício previdenciário além do que está sendo pleiteado perante a UFV.<br>Tenho ciência que em caso de acumulação, tenho o compromisso de comunicar o recebimento do benefício às outras fontes pagadoras, pois faço a opção em receber o integralmente o benefício de Pensão pago pelo ___________________________________________________, e submeter a pensão aqui pleiteada nos termos dos artigos 23 e 24 da EC 103/2019.">ACUMULA - RECEBER DE OUTRA INSTITUIÇÃO - Pensão -Outro</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Representante Legal</legend>
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label for="representante">Representante Legal:</label>
+          <select name="representante" id="representante">
+            <option value="">NÃO</option>
+            <option value="REPRESENTANTE LEGAL">SIM</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="nome_represent">Nome do(a) Representante:</label>
+          <input type="text" id="nome_represent" name="nome_represent">
+        </div>
+
+        <div class="form-group">
+          <label for="cpf_represent">CPF do(a) Representante:</label>
+          <input type="text" id="cpf_represent" name="cpf_represent" class="mask-cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Dados Bancários</legend>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="banco">Banco:</label>
+          <input type="text" id="banco" name="banco">
+        </div>
+
+        <div class="form-group">
+          <label for="agencia">Agência:</label>
+          <input type="text" id="agencia" name="agencia">
+        </div>
+
+        <div class="form-group">
+          <label for="conta">Conta Corrente:</label>
+          <input type="text" id="conta" name="conta">
+        </div>
+
+        <div class="form-group">
+          <label for="contasal">Conta Salário:</label>
+          <input type="text" id="contasal" name="contasal">
+        </div>
+
+        <div class="form-group full-width">
+          <label for="valor">Valor da Pensão (R$):</label>
+          <input type="text" id="valor" name="valor" class="mask-real" placeholder="0,00" inputmode="numeric">
+          <div class="dica">Digite apenas os números; o valor é formatado em reais (ex.: 5.432,10).</div>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Logradouro</legend>
+      <div class="form-grid grid-3">
+        <div class="form-group">
+          <label for="cep">CEP:</label>
+          <input type="text" id="cep" name="cep" placeholder="00000-000" maxlength="9" inputmode="numeric" autocomplete="postal-code">
+          <div id="cepStatus">Digite o CEP para preencher o endereço automaticamente.</div>
+        </div>
+
+        <div class="form-group" style="grid-column: span 2;">
+          <label for="logradouro">Endereço (rua, avenida...):</label>
+          <input type="text" id="logradouro" name="logradouro">
+        </div>
+
+        <div class="form-group">
+          <label for="numero">Nº:</label>
+          <input type="text" id="numero" name="numero">
+        </div>
+
+        <div class="form-group" style="grid-column: span 2;">
+          <label for="complemento">Complemento:</label>
+          <input type="text" id="complemento" name="complemento">
+        </div>
+
+        <div class="form-group">
+          <label for="bairro">Bairro:</label>
+          <input type="text" id="bairro" name="bairro">
+        </div>
+
+        <div class="form-group">
+          <label for="cidade">Cidade:</label>
+          <input type="text" id="cidade" name="cidade">
+        </div>
+
+        <div class="form-group">
+          <label for="uf">UF:</label>
+          <input type="text" id="uf" name="uf" maxlength="2" placeholder="MG">
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="form-grid" style="margin-bottom: 20px;">
+      <div class="form-group">
+        <label for="data">Data dos Documentos:</label>
+        <input type="text" id="data" name="data" class="mask-data" placeholder="dd/mm/aaaa" maxlength="10" inputmode="numeric" required>
+        <div class="dica">Sai no documento por extenso (ex.: 19 de novembro de 2026).</div>
+      </div>
+
+      <div class="form-group">
+        <label for="servidor_pgp">Atendente da PGP:</label>
+        <select name="servidor_pgp" id="servidor_pgp" required>
+          <option value="">->Selecione aqui</option>
+          <option value="DOUGLAS LUÍS DE ARAÚJO<br>Serviço de Aposentadoria e Pensão<br>Pró-Reitoria de Gestão de Pessoas<br>Universidade Federal de Viçosa">Douglas</option>
+          <option value="ELY ROSA<br>Serviço de Aposentadoria e Pensão<br>Pró-Reitoria de Gestão de Pessoas<br>Universidade Federal de Viçosa">Ely Rosa</option>
+          <option value="LUCIANA DOS SANTOS BERNARDO<br>Serviço de Aposentadoria e Pensão<br>Pró-Reitoria de Gestão de Pessoas<br>Universidade Federal de Viçosa">Luciana</option>
+          <option value="ROBSON BONIFÁCIO FERREIRA<br>Serviço de Aposentadoria e Pensão<br>Pró-Reitoria de Gestão de Pessoas<br>Universidade Federal de Viçosa">Robson</option>
+          <option value="SÁVIO SALES DE CARVALHO<br>Serviço de Aposentadoria e Pensão<br>Pró-Reitoria de Gestão de Pessoas<br>Universidade Federal de Viçosa">Sávio</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="submit" id="btnGerar">GERAR PDF</button>
+  </form>
+</div>
+
+<script>
+  const form = document.getElementById('meuForm');
+  const val = id => document.getElementById(id).value.trim();
+  const up  = id => val(id).toUpperCase();
+
+  /* ===================== Funções de validação ===================== */
+  function validaCPF(valor) {
+    const c = valor.replace(/\D/g, '');
+    if (c.length !== 11 || /^(\d)\1{10}$/.test(c)) return false;
+    let soma = 0;
+    for (let i = 0; i < 9; i++) soma += parseInt(c[i], 10) * (10 - i);
+    let d1 = (soma * 10) % 11; if (d1 === 10) d1 = 0;
+    if (d1 !== parseInt(c[9], 10)) return false;
+    soma = 0;
+    for (let i = 0; i < 10; i++) soma += parseInt(c[i], 10) * (11 - i);
+    let d2 = (soma * 10) % 11; if (d2 === 10) d2 = 0;
+    return d2 === parseInt(c[10], 10);
+  }
+
+  // Retorna um objeto Date válido ou null
+  function parseData(valor) {
+    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(valor);
+    if (!m) return null;
+    const d = +m[1], mes = +m[2], a = +m[3];
+    if (a < 1900) return null;
+    const dt = new Date(a, mes - 1, d);
+    if (dt.getFullYear() !== a || dt.getMonth() !== mes - 1 || dt.getDate() !== d) return null;
+    return dt;
+  }
+
+  function dataExtenso(valor) {
+    const dt = parseData(valor);
+    if (!dt) return valor;
+    const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    return dt.getDate() + ' de ' + meses[dt.getMonth()] + ' de ' + dt.getFullYear();
+  }
+
+  function hoje() { const h = new Date(); return new Date(h.getFullYear(), h.getMonth(), h.getDate()); }
+
+  /* ===================== Máscaras ===================== */
+  function mascaraCPF(v) {
+    v = v.replace(/\D/g, '').slice(0, 11);
+    return v.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  }
+  function mascaraData(v) {
+    v = v.replace(/\D/g, '').slice(0, 8);
+    return v.replace(/(\d{2})(\d)/, '$1/$2').replace(/(\d{2})\/(\d{2})(\d)/, '$1/$2/$3');
+  }
+  // Formato em real: 1.234,56 (digita-se só números; os 2 últimos são os centavos)
+  function mascaraReal(v) {
+    v = v.replace(/\D/g, '').replace(/^0+/, '');
+    if (v === '') return '';
+    while (v.length < 3) v = '0' + v;
+    const centavos = v.slice(-2);
+    const inteiro = v.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return inteiro + ',' + centavos;
+  }
+  document.getElementById('valor').addEventListener('input', e => { e.target.value = mascaraReal(e.target.value); });
+
+  function mascaraCEP(v) {
+    v = v.replace(/\D/g, '').slice(0, 8);
+    return v.replace(/(\d{5})(\d)/, '$1-$2');
+  }
+
+  /* ===================== Validação dos campos ===================== */
+  function validarCampoCPF(el, obrigatorio) {
+    const v = el.value.trim();
+    if (!v) { el.setCustomValidity(obrigatorio ? 'Informe o CPF.' : ''); return; }
+    el.setCustomValidity(validaCPF(v) ? '' : 'CPF inválido. Confira os dígitos.');
+  }
+
+  function validarCampoData(el, opts) {
+    const v = el.value.trim();
+    if (!v) { el.setCustomValidity(''); return; } // "required" cuida do vazio
+    const dt = parseData(v);
+    if (!dt) { el.setCustomValidity('Data inválida. Use o formato dd/mm/aaaa.'); return; }
+    if (opts && opts.naoFutura && dt > hoje()) { el.setCustomValidity('A data não pode ser futura.'); return; }
+    el.setCustomValidity('');
+  }
+
+  function validarCEP(el) {
+    const v = el.value.replace(/\D/g, '');
+    el.setCustomValidity(v === '' || v.length === 8 ? '' : 'CEP deve ter 8 dígitos.');
+  }
+
+  function validarRepresentante() {
+    const sim = val('representante') !== '';
+    const nomeEl = document.getElementById('nome_represent');
+    const cpfEl = document.getElementById('cpf_represent');
+    nomeEl.required = sim;
+    cpfEl.required = sim;
+    validarCampoCPF(cpfEl, sim);
+  }
+
+  function validarTudo() {
+    validarCampoCPF(document.getElementById('cpf'), true);
+    validarCampoData(document.getElementById('falecimento'), { naoFutura: true });
+    validarCampoData(document.getElementById('data'), {});
+    validarCEP(document.getElementById('cep'));
+    validarRepresentante();
+  }
+
+  // Máscaras + validação ao digitar
+  document.querySelectorAll('.mask-cpf').forEach(el => {
+    el.addEventListener('input', () => { el.value = mascaraCPF(el.value); validarTudo(); });
+  });
+  document.getElementById('falecimento').addEventListener('input', e => { e.target.value = mascaraData(e.target.value); validarTudo(); });
+  document.getElementById('data').addEventListener('input', e => { e.target.value = mascaraData(e.target.value); validarTudo(); });
+  document.getElementById('representante').addEventListener('change', validarRepresentante);
+
+  // Data de hoje como padrão (editável)
+  (function () {
+    const h = new Date();
+    const p = n => String(n).padStart(2, '0');
+    document.getElementById('data').value = p(h.getDate()) + '/' + p(h.getMonth() + 1) + '/' + h.getFullYear();
+  })();
+
+  /* ===================== CEP automático (ViaCEP) ===================== */
+  const cepEl = document.getElementById('cep');
+  const cepStatus = document.getElementById('cepStatus');
+  let ultimoCEP = '';
+
+  function setStatus(msg, cls) { cepStatus.textContent = msg; cepStatus.className = cls || ''; }
+
+  async function buscarCEP(cep8) {
+    setStatus('Buscando endereço...', '');
+    try {
+      const resp = await fetch('https://viacep.com.br/ws/' + cep8 + '/json/');
+      if (!resp.ok) throw new Error('http ' + resp.status);
+      const d = await resp.json();
+      if (d.erro) {
+        setStatus('CEP não encontrado. Preencha o endereço manualmente.', 'erro');
+        return;
+      }
+      document.getElementById('logradouro').value = (d.logradouro || '').toUpperCase();
+      document.getElementById('bairro').value = (d.bairro || '').toUpperCase();
+      document.getElementById('cidade').value = (d.localidade || '').toUpperCase();
+      document.getElementById('uf').value = (d.uf || '').toUpperCase();
+      setStatus('Endereço preenchido. Informe o número e o complemento.', 'ok');
+      document.getElementById('numero').focus();
+    } catch (e) {
+      setStatus('Não foi possível consultar o CEP (verifique a internet). Preencha manualmente.', 'erro');
+    }
+  }
+
+  cepEl.addEventListener('input', () => {
+    cepEl.value = mascaraCEP(cepEl.value);
+    validarCEP(cepEl);
+    const c = cepEl.value.replace(/\D/g, '');
+    if (c.length === 8 && c !== ultimoCEP) { ultimoCEP = c; buscarCEP(c); }
+    if (c.length < 8) { ultimoCEP = ''; setStatus('Digite o CEP para preencher o endereço automaticamente.', ''); }
+  });
+
+  /* ===================== Seleção de documentos ===================== */
+  const selTodos = document.getElementById('selTodos');
+  const checks = Array.from(document.querySelectorAll('.doc-check'));
+  const btnGerar = document.getElementById('btnGerar');
+
+  function atualizarSelecao() {
+    const n = checks.filter(c => c.checked).length;
+    selTodos.checked = n === checks.length;
+    selTodos.indeterminate = n > 0 && n < checks.length;
+    btnGerar.textContent = n === 0 ? 'SELECIONE AO MENOS UM DOCUMENTO'
+      : n === 1 ? 'GERAR PDF (1 DOCUMENTO)'
+      : 'GERAR PDF (' + n + ' DOCUMENTOS)';
+  }
+  selTodos.addEventListener('change', () => { checks.forEach(c => c.checked = selTodos.checked); atualizarSelecao(); });
+  checks.forEach(c => c.addEventListener('change', atualizarSelecao));
+  atualizarSelecao();
+
+  /* ===================== Geração dos documentos ===================== */
+  validarTudo();
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    validarTudo();
+    const selecionados = checks.filter(c => c.checked).map(c => parseInt(c.value, 10));
+    if (selecionados.length === 0) {
+      alert('Selecione ao menos um documento para gerar.');
+      return;
+    }
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    const nome = up('nome'), email = up('email'), cpf = up('cpf'), rg = up('rg');
+    const telefone = up('telefone'), servidor = up('servidor');
+    const matufv = up('matufv'), siape = up('siape'), falecimento = up('falecimento');
+    const banco = up('banco'), agencia = up('agencia'), conta = up('conta'), contasal = up('contasal');
+    const valor = up('valor');
+    const nome_represent = up('nome_represent'), cpf_represent = up('cpf_represent');
+    const data = dataExtenso(val('data')).toLowerCase();
+
+    // Endereço montado a partir dos campos separados
+    const logradouro = up('logradouro'), numero = up('numero'), complemento = up('complemento');
+    const bairro = up('bairro'), cidade = up('cidade'), uf = up('uf'), cep = up('cep');
+    const linhaEndereco = [logradouro, numero].filter(Boolean).join(', ') + (complemento ? ' - ' + complemento : '');
+    const linhaCidade = [cep ? 'CEP: ' + cep : '', [cidade, uf].filter(Boolean).join('/')].filter(Boolean).join(' - ');
+
+    const filhos = val('filhos'), categoria = val('categoria'), beneficio = val('beneficio');
+    const relacao = val('relacao'), situacao = val('situacao'), servidor_pgp = val('servidor_pgp');
+    const etnia = val('etnia'), representante = val('representante');
+
+    // Brasão: aparece somente nos PDFs exportados
+    const cabecalho = `
+      <div class="cab">
+        <img src="https://pgp.ufv.br/wp-content/uploads/2024/05/brasao_republica.png" alt="Brasão da República">
+        <div>Ministério da Educação<br>Universidade Federal de Viçosa<br>Campus Viçosa<br>Pró-Reitoria de Gestão de Pessoas</div>
+      </div>`;
+
+    const temRep = representante !== '' || nome_represent !== '';
+    const assinaturas = `
+      <div class="center assinatura"><strong>${nome}<br>CPF: ${cpf}${
+        temRep ? `<br><br>${nome_represent}<br>${representante}${cpf_represent ? '<br>CPF: ' + cpf_represent : ''}` : ''
+      }</strong></div>`;
+
+    const contatos = `<div class="contatos">Telefones: ${telefone}<br>E-mail: ${email}</div>`;
+
+    const docs = [
+      // 0 - Auxílio funeral
+      () => `
+        ${cabecalho}
+        <p class="dest">Ao Senhor<br>Luiz Antonio Abrantes<br>Pró-Reitor de Gestão de Pessoas</p>
+        <div class="right">Viçosa-MG, ${data}.</div>
+        <p>Senhor Pró-Reitor,</p>
+        <p>Eu, <strong>${nome}</strong>, portador(a) do CPF: <strong>${cpf}</strong> e do RG <strong>${rg}</strong>, solicito a Vossa Senhoria providências para concessão do benefício de auxílio-funeral em virtude do falecimento ${categoria}, Senhor(a) <strong>${servidor}</strong> matrículas <strong>${matufv}/UFV</strong> e <strong>${siape}/SIAPE</strong>, ${situacao} desta Universidade Federal de Viçosa em função de seu óbito ocorrido no dia ${falecimento}.</p>
+        <p>Declaro, sob as penas da lei, quanto a não percepção do mesmo benefício em outro órgão público.</p>
+        <p>Declaro, também, a veracidade das informações prestadas, dos documentos apresentados, sob pena de responsabilidade administrativa, civil e criminal.</p>
+        <div class="center esp">Atenciosamente,</div>
+        ${assinaturas}
+        ${contatos}`,
+
+      // 1 - Pensão civil
+      () => `
+        ${cabecalho}
+        <p class="dest">Ao Senhor<br>Demetrius David da Silva<br>Reitor da Universidade Federal de Viçosa</p>
+        <div class="right">Viçosa-MG, ${data}.</div>
+        <p>Senhor Reitor,</p>
+        <p>Solicito a Vossa Senhoria providências no sentido de conceder-me pensão civil em virtude do falecimento ${categoria}, Senhor(a) <strong>${servidor}</strong>, matrículas ${matufv}/UFV e ${siape}/SIAPE, ${situacao} da Universidade Federal de Viçosa em função de seu óbito ocorrido no dia ${falecimento}.</p>
+        <div class="center esp">Atenciosamente,</div>
+        ${assinaturas}
+        ${contatos}`,
+
+      // 2 - Declaração de relacionamento e filhos
+      () => `
+        ${cabecalho}
+        <h3 class="center titulo">DECLARAÇÃO</h3>
+        <p>Declaro para os devidos fins que, ${relacao} com o(a) Senhor(a). ${servidor}, tivemos ${filhos}.</p>
+        <div class="center esp">Viçosa-MG, ${data}.</div>
+        ${assinaturas}
+        ${contatos}`,
+
+      // 3 - Acumulação de benefícios
+      () => `
+        ${cabecalho}
+        <h3 class="center titulo">ACUMULAÇÃO DE BENEFÍCIOS</h3>
+        <p>${beneficio}</p>
+        <div class="center esp">Viçosa-MG, ${data}.</div>
+        ${assinaturas}`,
+
+      // 4 - Dados do beneficiário / endereço / bancários
+      () => `
+        ${cabecalho}
+        <p class="espacoTopo"><strong>Instituidor de Pensão: ${servidor}<br>Matrículas: ${matufv}/UFV e ${siape}/SIAPE</strong></p>
+        <p><strong>Beneficiário de Pensão: ${nome}<br>CPF: ${cpf}<br>Etnia: ${etnia}</strong></p>
+        <p class="espacoTopo"><strong>Endereço:</strong><br>${linhaEndereco}<br>${bairro}<br>${linhaCidade}</p>
+        <p><strong>Dados Bancários:</strong><br>Banco: ${banco}<br>Agência: ${agencia}<br>Conta Corrente: ${conta}<br>Conta Salário: ${contasal}</p>
+        <div class="esp"></div>
+        ${assinaturas}`,
+
+      // 5 - Declaração de recebimento de pensão/aposentadoria em outro regime
+      () => `
+        ${cabecalho}
+        <h3 class="center titulo">DECLARAÇÃO DE RECEBIMENTO DE PENSÃO OU APOSENTADORIA EM OUTRO REGIME DE PREVIDÊNCIA</h3>
+        <p>Eu, <strong>${nome}</strong>, portador(a) do CPF: ${cpf} e do RG ${rg}, declaro, sob as penas do art. 299 do Código Penal, que:<br>(&nbsp;&nbsp;&nbsp;) não recebo aposentadoria/pensão de outro regime de previdência<br>(&nbsp;&nbsp;&nbsp;) recebo aposentadoria/pensão de outro regime de previdência</p>
+        <p>Caso receba aposentadoria ou pensão de outro regime de previdência, deverá declarar:<br>
+          - Tipo do benefício: (&nbsp;&nbsp;&nbsp;) Pensão (&nbsp;&nbsp;&nbsp;) Aposentadoria (&nbsp;&nbsp;&nbsp;) LOAS<br>
+          - Ente de origem: (&nbsp;&nbsp;&nbsp;) Estadual (&nbsp;&nbsp;&nbsp;) Municipal (&nbsp;&nbsp;&nbsp;) Federal (&nbsp;&nbsp;&nbsp;) INSS Privado<br>
+          - Tipo de servidor: (&nbsp;&nbsp;&nbsp;) Civil (&nbsp;&nbsp;&nbsp;) Militar<br>
+          - Data de início do benefício no outro regime: __________________________________<br>
+          - Nome do órgão da aposentadoria: INSS<br>
+          - Última remuneração bruta*: ______________________<br>
+          *Última remuneração bruta sem considerar valores de 13º salário (abono anual).</p>
+        <p>A Emenda Constitucional nº 103 de 12 de novembro de 2019, no § 1º do art. 24 prevê que a acumulação de pensão por morte com outro benefício fica sujeita à redução do valor daquele menos vantajoso nas seguintes situações:<br>
+          I - pensão por morte deixada por cônjuge ou companheiro do RGPS com pensão por morte concedida por outro regime de previdência social, inclusive as decorrentes das atividades militares; e<br>
+          II - pensão por morte deixada por cônjuge ou companheiro de qualquer regime de previdência social, inclusive as decorrentes das atividades militares, com aposentadoria concedida por qualquer regime de previdência social ou com proventos de inatividade decorrentes das atividades militares.</p>
+        <p>A declaração falsa ou diversa de fato ou situação real ocorrida, além de obrigar à devolução de eventuais importâncias recebidas indevidamente, quando for o caso, sujeitar-me-á às penalidades previstas nos arts. 171 e 299 do Código Penal.</p>
+        <div class="center esp">Viçosa-MG, ${data}.</div>
+        ${assinaturas}`,
+
+      // 6 - Dependente inválida / isenção de IR
+      () => `
+        ${cabecalho}
+        <p class="dest">Ao Senhor<br>Demetrius David da Silva<br>Reitor da Universidade Federal de Viçosa</p>
+        <div class="right">Viçosa-MG, ${data}.</div>
+        <p>Senhor Reitor,</p>
+        <p>Solicito a Vossa Magnificência para que no benefício de pensão civil solicitado e concedido em virtude do falecimento ${situacao} desta Universidade Federal de Viçosa, Senhor(a) <strong>${servidor}</strong>, matrículas ${matufv}/UFV e ${siape}/SIAPE, em função de seu óbito ocorrido no dia ${falecimento}, seja considerado no cálculo o § 2º do artigo 23 da Emenda Constitucional nº 103/2019, por me enquadrar como dependente inválida.</p>
+        <p>Solicito de Vossa Senhoria providências quanto à concessão de Isenção de Imposto de Renda Retido na Fonte de acordo com o Artigo 6º, inciso 21 da Lei 7.713/88, e inciso XVII, do art.62, da IN/RFB nº1.500/14, em virtude de ter sido acometido de enfermidade prevista em Lei.</p>
+        <div class="center esp">Atenciosamente,</div>
+        ${assinaturas}
+        ${contatos}`,
+
+      // 7 - Declaração de habilitação (PGP)
+      () => `
+        ${cabecalho}
+        <h3 class="center titulo">DECLARAÇÃO</h3>
+        <p>Declaramos para os devidos fins que <strong>${nome}</strong>, portador(a) do CPF: <strong>${cpf}</strong> e do RG <strong>${rg}</strong>, está habilitado(a) como beneficiário(a) de pensão junto a Universidade Federal de Viçosa, em virtude do falecimento ${situacao}, Senhor(a) ${servidor}, desta Instituição.</p>
+        <p>A referida pensão civil tem o valor bruto de aproximadamente <strong>R$ ${valor}</strong>.</p>
+        <p>Declaramos, ainda, que a abertura da <strong>conta salário e conta corrente</strong> é uma condição para o cadastramento e pagamento da referida pensão no Sistema Integrado de Administração de Pessoal – SIAPE e deverá ser cadastrada na instituição bancária com convênio do Ministério da Gestão e da Inovação em Serviços Públicos - MGI, CNPJ 00.489.828/0010-46.</p>
+        <div class="right esp">Viçosa-MG, ${data}.</div>
+        <div class="center esp">${servidor_pgp}</div>`
+    ];
+
+    const paginas = selecionados.sort((a, b) => a - b)
+      .map(i => `<div class="page">${docs[i]()}</div>`).join('\n');
+
+    const nomeArq = (selecionados.length === docs.length ? 'Documentos_Pensao_' : 'Documentos_Selecionados_') + nome.replace(/[<>"]/g, '');
+
+    const novoHTML = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>${nomeArq}</title>
+  <style>
+    @page { size: A4; margin: 15mm; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.4; color: #000; background: #ddd; }
+
+    /* Cada .page = exatamente 1 folha A4 (área útil 180mm x 267mm) */
+    .page {
+      width: 180mm;
+      height: 266mm;
+      overflow: hidden;
+      background: #fff;
+      margin: 10mm auto;
+      padding: 0;
+      page-break-after: always;
+      break-after: page;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .page:last-child { page-break-after: auto; break-after: auto; }
+
+    @media print {
+      body { background: #fff; }
+      .page { margin: 0; }
+    }
+
+    p { text-align: justify; margin: 0 0 10px; }
+    h3 { margin: 0; }
+    .center { text-align: center; }
+    .right  { text-align: right; margin-bottom: 10px; }
+    .cab { text-align: center; margin-bottom: 14px; }
+    .cab img { width: 90px; height: auto; display: block; margin: 0 auto 6px; }
+    .dest { text-align: left; margin-bottom: 12px; }
+    .titulo { margin: 22px 0 18px; }
+    .esp { margin-top: 28px; margin-bottom: 8px; }
+    .espacoTopo { margin-top: 24px; }
+    .assinatura { margin-top: 30px; }
+    .contatos { margin-top: 24px; }
+  </style>
+</head>
+<body>
+${paginas}
+<script>
+  // Garante que cada documento caiba em UMA página: reduz a fonte se necessário
+  function ajustarPaginas() {
+    document.querySelectorAll('.page').forEach(function (p) {
+      var fs = 10;
+      p.style.fontSize = fs + 'pt';
+      while (p.scrollHeight > p.clientHeight + 1 && fs > 6) {
+        fs -= 0.25;
+        p.style.fontSize = fs + 'pt';
+      }
+    });
+  }
+  window.onload = function () {
+    ajustarPaginas();
+    window.focus();
+    setTimeout(function () { window.print(); }, 300);
+  };
+<\/script>
+</body>
+</html>`;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(novoHTML);
+      printWindow.document.close();
+    } else {
+      alert('Por favor, permita pop-ups no seu navegador para visualizar e gerar o PDF.');
+    }
+  });
+</script>
+</body>
+</html>
