@@ -892,7 +892,7 @@
     const paginas = selecionados.sort((a, b) => a - b)
       .map(i => `<div class="page">${docs[i]()}</div>`).join('\n');
 
-    const nomeArq = (selecionados.length === docs.length ? 'Documentos_Pensao_' : 'Documentos_Selecionados_') + nome.replace(/[<>"]/g, '');
+    const nomeArq = (selecionados.length === docs.length ? 'Documentos_' : 'Documentos_Selecionados_') + nome.replace(/[<>"]/g, '');
 
     const novoHTML = `<!DOCTYPE html>
 <html lang="pt-BR">
