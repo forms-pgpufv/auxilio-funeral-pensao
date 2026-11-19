@@ -97,6 +97,7 @@
     #cepStatus { font-size: 12px; margin-top: 5px; min-height: 16px; color: #666; }
     #cepStatus.erro { color: #c0392b; }
     #cepStatus.ok { color: #1e8e3e; }
+    .oculto { display: none !important; }
 
     /* Seleção de documentos */
     .escolha-doc { border-color: #28a745; background: #f3fbf5; }
@@ -138,6 +139,27 @@
       .form-grid, .grid-3, .doc-list { grid-template-columns: 1fr; }
     }
   </style>
+  <!-- Bibliotecas para gerar o PDF diretamente (download) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    /* Área oculta usada para "fotografar" cada página do PDF (A4, margem 15mm => 180 x 266 mm) */
+    #pdfRoot { position: fixed; left: -10000px; top: 0; width: 180mm; font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.4; color: #000; }
+    #pdfRoot * { box-sizing: border-box; }
+    #pdfRoot .page { width: 180mm; height: 266mm; overflow: hidden; background: #fff; margin: 0; padding: 0; }
+    #pdfRoot p { text-align: justify; margin: 0 0 10px; }
+    #pdfRoot h3 { margin: 0; }
+    #pdfRoot .center { text-align: center; }
+    #pdfRoot .right { text-align: right; margin-bottom: 10px; }
+    #pdfRoot .cab { text-align: center; margin-bottom: 14px; }
+    #pdfRoot .cab img { width: 90px; height: auto; display: block; margin: 0 auto 6px; }
+    #pdfRoot .dest { text-align: left; margin-bottom: 12px; }
+    #pdfRoot .titulo { margin: 22px 0 18px; }
+    #pdfRoot .esp { margin-top: 28px; margin-bottom: 8px; }
+    #pdfRoot .espacoTopo { margin-top: 24px; }
+    #pdfRoot .assinatura { margin-top: 30px; }
+    #pdfRoot .contatos { margin-top: 24px; }
+  </style>
 </head>
 <body>
 
@@ -163,7 +185,7 @@
         <label class="check"><input type="checkbox" class="doc-check" value="6" checked><span>7 - Dependente Inválida / Isenção de IR</span></label>
         <label class="check"><input type="checkbox" class="doc-check" value="7" checked><span>8 - Declaração de Habilitação à Pensão (PGP)</span></label>
       </div>
-      <div class="dica">Marque um ou mais documentos. Cada documento sai em uma página A4, na ordem acima, em um único PDF.</div>
+      <div class="dica">Marque um ou mais documentos. Abaixo aparecem apenas os campos necessários para os documentos marcados. Cada documento sai em uma página A4, na ordem acima, em um único PDF.</div>
     </fieldset>
 
     <fieldset>
@@ -595,9 +617,122 @@
       : n === 1 ? 'GERAR PDF (1 DOCUMENTO)'
       : 'GERAR PDF (' + n + ' DOCUMENTOS)';
   }
-  selTodos.addEventListener('change', () => { checks.forEach(c => c.checked = selTodos.checked); atualizarSelecao(); });
-  checks.forEach(c => c.addEventListener('change', atualizarSelecao));
+  /* ===== Campos exibidos conforme os documentos selecionados =====
+     Cada campo lista os documentos (índices 0 a 7) que o utilizam. */
+  const TODOS_0A6 = [0, 1, 2, 3, 4, 5, 6];
+  const CAMPOS_POR_DOC = {
+    servidor: [0, 1, 4, 6, 7], matufv: [0, 1, 4, 6, 7], siape: [0, 1, 4, 6, 7],
+    situacao: [0, 1, 6, 7], falecimento: [0, 1, 6], categoria: [0, 1],
+    nome: [0, 1, 2, 3, 4, 5, 6, 7], cpf: [0, 1, 2, 3, 4, 5, 6, 7],
+    rg: [0, 5, 7], telefone: [0, 1, 2, 6], email: [0, 1, 2, 6],
+    filhos: [2], relacao: [2], beneficio: [3], etnia: [4],
+    representante: TODOS_0A6, nome_represent: TODOS_0A6, cpf_represent: TODOS_0A6,
+    banco: [4], agencia: [4], conta: [4], contasal: [4], valor: [7],
+    cep: [4], logradouro: [4], numero: [4], complemento: [4], bairro: [4], cidade: [4], uf: [4],
+    data: [0, 1, 2, 3, 4, 5, 6, 7], servidor_pgp: [7]
+  };
+
+  function aplicarVisibilidade() {
+    const sel = checks.filter(c => c.checked).map(c => parseInt(c.value, 10));
+    Object.keys(CAMPOS_POR_DOC).forEach(id => {
+      const campo = document.getElementById(id);
+      if (!campo) return;
+      const grupo = campo.closest('.form-group') || campo;
+      const visivel = CAMPOS_POR_DOC[id].some(d => sel.includes(d));
+      grupo.classList.toggle('oculto', !visivel);
+      campo.disabled = !visivel; // campo oculto não é validado nem exigido
+    });
+    // Esconde os blocos (fieldset) que ficaram sem nenhum campo visível
+    document.querySelectorAll('fieldset:not(.escolha-doc)').forEach(fs => {
+      const temVisivel = fs.querySelectorAll('.form-group:not(.oculto)').length > 0;
+      fs.classList.toggle('oculto', !temVisivel);
+    });
+    validarTudo();
+  }
+
+  selTodos.addEventListener('change', () => { checks.forEach(c => c.checked = selTodos.checked); atualizarSelecao(); aplicarVisibilidade(); });
+  checks.forEach(c => c.addEventListener('change', () => { atualizarSelecao(); aplicarVisibilidade(); }));
   atualizarSelecao();
+  aplicarVisibilidade();
+
+  /* ===================== Geração do PDF ===================== */
+  const BRASAO_URL = 'https://pgp.ufv.br/wp-content/uploads/2024/05/brasao_republica.png';
+  let brasaoCache; // undefined = ainda não carregado; null = falhou
+
+  async function carregarBrasao() {
+    if (brasaoCache !== undefined) return brasaoCache;
+    try {
+      const r = await fetch(BRASAO_URL, { mode: 'cors' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      const blob = await r.blob();
+      brasaoCache = await new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => res(fr.result);
+        fr.onerror = rej;
+        fr.readAsDataURL(blob);
+      });
+    } catch (e) {
+      brasaoCache = null;
+    }
+    return brasaoCache;
+  }
+
+  // Plano B: abre a janela de impressão (o usuário escolhe "Salvar como PDF")
+  function abrirImpressao(htmlCompleto) {
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.open();
+      w.document.write(htmlCompleto);
+      w.document.close();
+    } else {
+      alert('Por favor, permita pop-ups no seu navegador para gerar o PDF.');
+    }
+  }
+
+  async function gerarPDF(paginasHTML, nomeArq, htmlImpressao) {
+    btnGerar.disabled = true;
+    btnGerar.textContent = 'GERANDO PDF...';
+    let root = null;
+    try {
+      if (!window.jspdf || !window.html2canvas) throw new Error('bibliotecas indisponíveis');
+      const brasao = await carregarBrasao();
+      if (!brasao) throw new Error('brasão indisponível');
+
+      root = document.createElement('div');
+      root.id = 'pdfRoot';
+      root.innerHTML = paginasHTML.split(BRASAO_URL).join(brasao);
+      document.body.appendChild(root);
+
+      // Espera as imagens carregarem
+      await Promise.all(Array.from(root.querySelectorAll('img')).map(img =>
+        img.complete ? Promise.resolve() : new Promise(r => { img.onload = img.onerror = r; })));
+
+      const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+      const pages = Array.from(root.querySelectorAll('.page'));
+
+      for (let i = 0; i < pages.length; i++) {
+        const p = pages[i];
+        // Reduz a fonte, se preciso, para o documento caber em 1 página
+        let fs = 10;
+        p.style.fontSize = fs + 'pt';
+        while (p.scrollHeight > p.clientHeight + 1 && fs > 6) { fs -= 0.25; p.style.fontSize = fs + 'pt'; }
+
+        const canvas = await window.html2canvas(p, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+        if (i > 0) pdf.addPage();
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 15, 15, 180, 266);
+      }
+
+      pdf.save(nomeArq.replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '_') + '.pdf');
+    } catch (e) {
+      console.warn('Download direto indisponível, usando impressão:', e);
+      alert('Não foi possível baixar o PDF diretamente (verifique a conexão com a internet). Vou abrir a janela de impressão: escolha "Salvar como PDF".');
+      abrirImpressao(htmlImpressao);
+    } finally {
+      if (root) root.remove();
+      btnGerar.disabled = false;
+      atualizarSelecao();
+    }
+  }
 
   /* ===================== Geração dos documentos ===================== */
   validarTudo();
@@ -817,14 +952,7 @@ ${paginas}
 </body>
 </html>`;
 
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.open();
-      printWindow.document.write(novoHTML);
-      printWindow.document.close();
-    } else {
-      alert('Por favor, permita pop-ups no seu navegador para visualizar e gerar o PDF.');
-    }
+    gerarPDF(paginas, nomeArq, novoHTML);
   });
 </script>
 </body>
